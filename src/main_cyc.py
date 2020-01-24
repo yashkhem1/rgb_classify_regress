@@ -26,20 +26,19 @@ def main():
 
     train_dataset = H36M(opt, split='train',
                          train_stats={},
-                         allowed_subj_list_reg=opt.sub_list_reg,
-                         allowed_subj_list_met=opt.sub_list_met)
+                         allowed_subj_list=opt.sub_list_reg,
+                         )
 
     test_dataset = H36M(opt, split='test',
                         train_stats={'mean_3d': train_dataset.mean_3d,
                                      'std_3d': train_dataset.std_3d,
-                                     'mean_bone_len': train_dataset.mean_bone_len},
-                        allowed_subj_list_reg=[9, 11],
-                        allowed_subj_list_met=[9, 11])
+                                    },
+                        allowed_subj_list=[9, 11])
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=opt.train_batch * opt.chunk_size,
-        shuffle=False,
+        batch_size=opt.train_batch,
+        shuffle=True,
         num_workers=1,
         pin_memory=True,
         drop_last=True
@@ -48,7 +47,7 @@ def main():
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=opt.train_batch * opt.chunk_size,
+        batch_size=opt.train_batch,
         shuffle=False,
         num_workers=1,
         # worker_init_fn=worker_init_fn
@@ -78,7 +77,7 @@ def main():
 
         exit(0)
 
-    optimizer = torch.optim.Adam(list(model['backbone'].parameters()) + list(model['temporal'].parameters()),
+    optimizer = torch.optim.Adam(list(model['backbone'].parameters()) + list(model['pose'].parameters()),
                                  opt.lr,
                                  betas=(0.9, 0.999),
                                  weight_decay=0.00,

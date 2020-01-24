@@ -4,12 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import math
 from common.utils import AverageMeter
-from common.camera_utils import h36m_cameras_extrinsic_params as h36m_cam_params, rotate_emb
-from models.criterion_list import calculate_soft_ngh, cal_cyc_mu_sig
-from models.criterion_mean_bone import MeanBoneLenLoss
 from common.error_metrics import un_normalise_pose, cal_avg_l2_jnt_dist, scale_norm_pose, normalise_pose
-
-valid_reg_jnts = torch.cat((torch.arange(0,18), torch.arange(21,48)))
 
 
 def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
@@ -72,7 +67,6 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
     allowed_subject_list_reg = list(map(lambda x: dataset.subject_map[x], dataset.allowed_subject_list_reg))
 
     criterion_pose = nn.L1Loss().cuda()
-    criterion_bone_len = MeanBoneLenLoss(skeleton_idx, skeleton_wt, mean_bone_len, mean, std)
 
     beta_1 = 1.0
     beta_2 = 1.0

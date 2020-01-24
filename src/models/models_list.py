@@ -129,7 +129,7 @@ class BackBone(nn.Module):
         return resnet_out_down
 
 
-class PoseRgressor(nn.Module):
+class PoseRegressor(nn.Module):
     def __init__(self, opt, in_feat=512, h=1):
         super(PoseRegressor, self).__init__()
 
