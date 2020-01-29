@@ -1,11 +1,11 @@
 import sys
-sys.path.append('/home/rahul/rgb_classify_regress/src')
+sys.path.append('/home/yash/projects/rgb_classify_regress/src')
 
 import torch
 import torch.utils.data
 import numpy as np
 from opts import opts
-from models.models_list import BackBone, PoseRgressor
+from models.models_list import BackBone, PoseRegressor
 from data_loader.h36m_basic import H36M
 from common.logger import Logger
 # from utils.utils import adjust_learning_rate
@@ -22,7 +22,7 @@ def main():
     torch.cuda.manual_seed(opt.seed)
     torch.backends.cudnn.deterministic = True
 
-    from training.train_test_cyc import run_epoch
+    from training.train_test import run_epoch
 
     train_dataset = H36M(opt, split='train',
                          train_stats={},
@@ -55,10 +55,12 @@ def main():
 
     model = dict()
     model['backbone'] = BackBone(opt, spatial_size=2)
-    model['pose'] = PoseRgressor(opt, in_feat=model['backbone'].out_feats, h=model['backbone'].out_feat_h)
+    model['pose'] = PoseRegressor(opt, in_feat=model['backbone'].out_feats, h=model['backbone'].out_feat_h)
 
     opt.bn_momentum = 0.1
     opt.bn_decay = 0.9
+
+    model_dict=None
 
     if opt.load_model != 'none':
         model_dict = torch.load(opt.load_model)
@@ -69,7 +71,7 @@ def main():
         print('Using data parallel')
         model['backbone'] = torch.nn.DataParallel(model['backbone'])
 
-    model['backbone'].to(torch.device("cuda:0"))
+    model['backbone'].to(torch.device("cuda:0"))   #change device here if we want
     model['pose'].to(torch.device("cuda:0"))
 
     if opt.test is True:
@@ -79,7 +81,7 @@ def main():
 
     optimizer = torch.optim.Adam(list(model['backbone'].parameters()) + list(model['pose'].parameters()),
                                  opt.lr,
-                                 betas=(0.9, 0.999),
+                                 betas=(0.9, 0.999), #can use beta from opt
                                  weight_decay=0.00,
                                  amsgrad=False,
                                  )
@@ -88,7 +90,6 @@ def main():
         assert model_dict is not None
         optimizer.load_state_dict(model_dict['optimiser_emb'])
 
-    model_dict = None
 
     # scheduler_emb = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95, last_epoch=-1)
     scheduler_emb = torch.optim.lr_scheduler.StepLR(optimizer, step_size=opt.lr_step, gamma=0.1)
@@ -111,11 +112,11 @@ def main():
             result_val = run_epoch(epoch, opt, test_loader, model, optimizer=None,
                                    split='test')
 
-            logger.write('LTr {:8f} AcTr {:8f} MpTr {:8f} NMpTr {:8f} LVal {:8f} AcVal {:8f} MpVal '
-                    '{:8f} NMpVal {:8f}\n'.format(result_train['loss_met'], -result_train['acc'],
+            logger.write('LTr {:8f}  MpTr {:8f} NMpTr {:8f} LVal {:8f}  MpVal '
+                    '{:8f} NMpVal {:8f}\n'.format(result_train['loss_mse'],
                     result_train['mpjpe'], result_train['nmpjpe'],
-                    result_val['loss_met'], -result_val['acc'], result_val['mpjpe'],
-                    result_val['nmpjpe']))
+                    result_val['loss_mse'], result_val['mpjpe'],
+                    result_val['nmpjpe']))    #have to change here
 
             print('Saving last epoch model')
             save_last_model = dict()
@@ -124,14 +125,14 @@ def main():
             else:
                 save_last_model['backbone'] = model['backbone'].state_dict()
 
-            save_last_model['pose'] = model['temporal'].state_dict()
+            save_last_model['pose'] = model['pose'].state_dict()
             save_last_model['mean_3d'] = train_dataset.mean_3d
             save_last_model['std_3d'] = train_dataset.std_3d
             save_last_model['optimiser'] = optimizer.state_dict()
 
             torch.save(save_last_model, opt.save_dir + '/model_last.pth')
 
-            metric_val = result_val[opt.e_metric]
+            metric_val = result_val[opt.e_metric]  #Metric value from opt
 
             if opt_metric_val > metric_val:
                 print('Saving model best model')
@@ -143,15 +144,15 @@ def main():
                 else:
                     save_best_model['backbone'] = model['backbone'].state_dict()
 
-                save_best_model['pose'] = model['temporal'].state_dict()
+                save_best_model['pose'] = model['pose'].state_dict()
                 save_best_model['mean_3d'] = train_dataset.mean_3d
                 save_best_model['std_3d'] = train_dataset.std_3d
 
                 torch.save(save_best_model, opt.save_dir + '/model_best.pth')
                 opt_metric_val = metric_val
         else:
-            logger.write('LTr {:8f} AcTr {:8f} MpTr {:8f} NMpTr {:8f}\n'.format(
-                result_train['loss_met'], -result_train['acc'], result_train['mpjpe'], result_train['nmpjpe']))
+            logger.write('LTr {:8f}  MpTfr {:8f} NMpTr {:8f}\n'.format(
+                result_train['loss_mse'],  result_train['mpjpe'], result_train['nmpjpe']))
 
         opt.global_step = opt.global_step + 1
         if opt.global_step % opt.lr_step == 0:

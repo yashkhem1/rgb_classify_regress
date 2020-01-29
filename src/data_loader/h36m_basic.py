@@ -130,12 +130,10 @@ class H36M(data.Dataset):
         id, img, pose, pose_un, subj = self.get_inputs(index)
 
         meta = dict()
-        meta['pose'] = pose
-        meta['pose_un'] = pose_un
         meta['annot_id'] = id
         meta['subj'] = subj
 
-        return img, meta
+        return img, pose, pose_un, meta
 
     def __len__(self):
         return self.n_samples

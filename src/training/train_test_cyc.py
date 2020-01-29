@@ -3,15 +3,15 @@ import torch.nn as nn
 import numpy as np
 from tqdm import tqdm
 import math
-from common.utils import AverageMeter
-from common.error_metrics import un_normalise_pose, cal_avg_l2_jnt_dist, scale_norm_pose, normalise_pose
+from src.common.utils import AverageMeter
+from src.common.error_metrics import un_normalise_pose, cal_avg_l2_jnt_dist, scale_norm_pose, normalise_pose
 
 
 def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
 
     if split == 'train':
         model['backbone'].train()
-        model['temporal'].train()
+        model['pose'].train()
         # model['pose'].train()
         bn_momentum = opt.bn_momentum
         assert optimizer is not None
@@ -21,7 +21,7 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         if epoch == 1:
             data_loader.dataset.init_epoch()
         model['backbone'].train()
-        model['temporal'].train()
+        model['pose'].train()
         # model['pose'].eval()
         bn_momentum = 0.0
 
@@ -31,7 +31,7 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         if isinstance(m, torch.nn.BatchNorm3d):
             m.momentum = bn_momentum
 
-    for _, m in model['temporal'].named_modules():
+    for _, m in model['pose'].named_modules():
         if isinstance(m, torch.nn.BatchNorm2d):
             m.momentum = bn_momentum
         if isinstance(m, torch.nn.BatchNorm3d):
@@ -59,12 +59,8 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
     mean = torch.from_numpy(dataset.mean_3d).float().view(1, -1)
     std = torch.from_numpy(dataset.std_3d).float().view(1, -1)
 
-    mean_bone_len = torch.from_numpy(dataset.mean_bone_len).float().view(1, -1)
-    skeleton_idx = dataset.skeleton_idx
-    skeleton_wt = dataset.skeleton_wt
-    n_joints = dataset.n_joints
 
-    allowed_subject_list_reg = list(map(lambda x: dataset.subject_map[x], dataset.allowed_subject_list_reg))
+    n_joints = dataset.n_joints
 
     criterion_pose = nn.L1Loss().cuda()
 

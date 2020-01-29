@@ -158,7 +158,7 @@ class PoseRegressor(nn.Module):
         y = self.conv_1(x)
         y = self.batch_norm(y)
 
-        y = nn.functional.relu(y)
+        y = nn.functional.relu(y)  #Why not relu(y)?
 
         # y = self.conv_2(y)
         #
