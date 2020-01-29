@@ -20,8 +20,8 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
     else:
         # if epoch == 1:
             # data_loader.dataset.init_epoch()
-        model['backbone'].train()
-        model['pose'].train()
+        model['backbone'].eval()
+        model['pose'].eval()
         # model['pose'].eval()
         bn_momentum = 0.0
 
@@ -37,14 +37,13 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         if isinstance(m, torch.nn.BatchNorm3d):
             m.momentum = bn_momentum
 
-    loss_mse_avg,  mpjpe_avg, nmpjpe_avg =  AverageMeter(), AverageMeter(), AverageMeter()
+    loss_mse_avg,  mpjpe_avg, nmpjpe_avg = AverageMeter(), AverageMeter(), AverageMeter()
 
-    max_itrs = 1500
+    max_itrs = 2500
     if split == 'test':
-        max_itrs = 500
+        max_itrs = 1500
 
-    n_iters_epoch = max(len(data_loader), max_itrs)  #TODO: Ask rahul here
-
+    n_iters_epoch = min(len(data_loader), max_itrs)  #TODO: Ask rahul here
 
     dataset = data_loader.dataset
 
@@ -68,20 +67,18 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         batch_size_reg = inp_reg.shape[0]
 
         # For regression
-        #subject_reg = meta['subj_reg'].view(batch_size_reg * opt.chunk_size)
+        # subject_reg = meta['subj_reg'].view(batch_size_reg * opt.chunk_size)
 
         tar_3d_flat = tar_3d.view(batch_size_reg, n_joints*3)
         tar_3d_un = tar_3d_un.view(batch_size_reg, -1, 3)
         tar_3d_un_flat = tar_3d_un.view(batch_size_reg, n_joints*3).numpy()
 
-        #convert to channels first format
-        inp_reg_ten = inp_reg.permute(0, 3, 1, 2).float()  # .to(torch.device("cuda:0"))
+        # convert to channels first format
+        inp_reg_ten = inp_reg.permute(0, 3, 1, 2).float()
 
         tar_3d_flat = tar_3d_flat.float().to(torch.device("cuda:0"))
 
-        #subject_reg_ten = subject_reg.long()
-
-
+        # subject_reg_ten = subject_reg.long()
 
         inp_ten = inp_reg_ten
 
@@ -89,7 +86,6 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
 
         if split == 'train':
             resnet_feat = model['backbone'](inp_ten)
-
         else:
             with torch.no_grad():
                 resnet_feat = model['backbone'](inp_ten)
@@ -98,38 +94,30 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         h = resnet_feat.shape[2]
         w = resnet_feat.shape[3]
 
-
         resnet_feat_reg = resnet_feat
 
         acc = 0
-
-
         desp_reg = model['pose'](resnet_feat_reg)
+
         # loss_mse = 0.
         # mpjpe = 0.
         # nmpjpe = 0.
 
-
-        pred_3d_reg_flat = desp_reg.view(batch_size_reg,-1)
+        pred_3d_reg_flat = desp_reg.view(batch_size_reg, -1)
 
         loss_mse = criterion_pose(pred_3d_reg_flat, tar_3d_flat)
 
         pred_3d_reg_un = un_normalise_pose(pred_3d_reg_flat.detach().cpu(), mean, std)
 
-        mpjpe = cal_avg_l2_jnt_dist(pred_3d_reg_un.numpy(), tar_3d_un.numpy())
+        mpjpe = cal_avg_l2_jnt_dist(pred_3d_reg_un.numpy(), tar_3d_un.numpy(), avg=True)
 
         pred_reg_scaled = scale_norm_pose(pred_3d_reg_un, tar_3d_un.float())
 
-        nmpjpe = cal_avg_l2_jnt_dist(pred_reg_scaled.numpy(), tar_3d_un.numpy())
+        nmpjpe = cal_avg_l2_jnt_dist(pred_reg_scaled.numpy(), tar_3d_un.numpy(), avg=True)
 
         loss_mse_avg.update(loss_mse.item())
 
-
-
-
         loss = loss_mse
-        #
-        #
         # acc_avg.update(acc)
         mpjpe_avg.update(mpjpe)
         nmpjpe_avg.update(nmpjpe)
@@ -142,7 +130,7 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
             optimizer.step()
             # classifier_optimizer.zero_grad()
 
-        pbar_suffix = 'Ep {}: [{}]|  L MSE{:.2f} | ' \
+        pbar_suffix = 'Ep {}: [{}]| L MSE {:.2f} ' \
                       '| MPJPE {:.2f} | NMPJPE {:.2f} )'.format(split, epoch, loss_mse_avg.avg, mpjpe_avg.avg, nmpjpe_avg.avg)
         pbar.set_description(pbar_suffix)
 

@@ -133,20 +133,28 @@ class PoseRegressor(nn.Module):
     def __init__(self, opt, in_feat=512, h=1):
         super(PoseRegressor, self).__init__()
 
-        conv_kernels = [h, 1]
+        conv_kernels = [h]
 
-        self.out_feats = [512, opt.desp_dim]
+        self.out_feats = [512]
 
         spatial_dim = h
 
-        self.conv_1 = nn.Conv2d(in_channels=in_feat, out_channels=self.out_feats[0], kernel_size=conv_kernels[0],
-                               padding=(0, 0), bias=False)
+        module_list = []
 
-        spatial_dim = spatial_dim - (conv_kernels[0]-1)
+        for i in range(len(conv_kernels)):
+            module_list.append(nn.Conv2d(in_channels=in_feat, out_channels=self.out_feats[i],
+                                         kernel_size=(conv_kernels[i], conv_kernels[i]),
+                                         padding=(0, 0), bias=False))
+            module_list.append(nn.BatchNorm2d(self.out_feats[i], affine=False))
 
-        self.batch_norm = nn.BatchNorm2d(self.out_feats[0], affine=False)
+            module_list.append(nn.ReLU(inplace=True))
 
-        self.fcn = nn.Conv2d(in_channels=self.out_feats[0], out_channels=self.out_feats[1], kernel_size=1, bias=False)
+            spatial_dim = spatial_dim - (conv_kernels[i]-1)
+
+        module_list.append(nn.Conv2d(in_channels=self.out_feats[-1], out_channels=opt.desp_dim, kernel_size=(1, 1),
+                                     padding=(0, 0), bias=False))
+
+        self.network = nn.Sequential(*module_list)
 
     def forward(self, x):
 
@@ -155,15 +163,6 @@ class PoseRegressor(nn.Module):
         h = x.shape[2]
         w = x.shape[3]
 
-        y = self.conv_1(x)
-        y = self.batch_norm(y)
-
-        y = nn.functional.relu(y)  #Why not relu(y)?
-
-        # y = self.conv_2(y)
-        #
-        # y = self.pool1(y)
-
-        y = self.fcn(y)
+        y = self.network(x)
 
         return y

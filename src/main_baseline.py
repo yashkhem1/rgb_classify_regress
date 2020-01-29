@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/yash/projects/rgb_classify_regress/src')
+sys.path.append('./')
 
 import torch
 import torch.utils.data
@@ -90,9 +90,7 @@ def main():
         assert model_dict is not None
         optimizer.load_state_dict(model_dict['optimiser_emb'])
 
-
-    # scheduler_emb = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95, last_epoch=-1)
-    scheduler_emb = torch.optim.lr_scheduler.StepLR(optimizer, step_size=opt.lr_step, gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=opt.lr_step, gamma=0.1)
 
     logger = Logger(opt.save_dir + '/logs')
 
@@ -116,7 +114,7 @@ def main():
                     '{:8f} NMpVal {:8f}\n'.format(result_train['loss_mse'],
                     result_train['mpjpe'], result_train['nmpjpe'],
                     result_val['loss_mse'], result_val['mpjpe'],
-                    result_val['nmpjpe']))    #have to change here
+                    result_val['nmpjpe']))    # have to change here
 
             print('Saving last epoch model')
             save_last_model = dict()
@@ -132,7 +130,7 @@ def main():
 
             torch.save(save_last_model, opt.save_dir + '/model_last.pth')
 
-            metric_val = result_val[opt.e_metric]  #Metric value from opt
+            metric_val = result_val[opt.e_metric]  # Metric value from opt
 
             if opt_metric_val > metric_val:
                 print('Saving model best model')
@@ -157,7 +155,7 @@ def main():
         opt.global_step = opt.global_step + 1
         if opt.global_step % opt.lr_step == 0:
             print('Applying LR Decay')
-        scheduler_emb.step()
+            scheduler.step()
 
         # opt.bn_momentum = opt.bn_momentum * opt.bn_decay
 
