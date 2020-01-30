@@ -16,12 +16,12 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         bn_momentum = opt.bn_momentum
         assert optimizer is not None
         # if epoch == 1:
-        # data_loader.dataset.init_epoch()
+        data_loader.dataset.init_epoch(split)
     else:
-        # if epoch == 1:
-            # data_loader.dataset.init_epoch()
-        model['backbone'].eval()
-        model['pose'].eval()
+        if epoch == 1:
+            data_loader.dataset.init_epoch(split)
+        model['backbone'].train()
+        model['pose'].train()
         # model['pose'].eval()
         bn_momentum = 0.0
 
@@ -52,7 +52,7 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
 
     n_joints = dataset.n_joints
 
-    criterion_pose = nn.MSELoss().cuda()
+    criterion_pose = nn.L1Loss(reduction='mean').to(torch.device("cuda:0"))
 
     pbar = tqdm(total=n_iters_epoch, ascii=True, ncols=200)
     # torch.cuda.empty_cache()

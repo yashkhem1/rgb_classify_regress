@@ -76,6 +76,8 @@ class H36M(data.Dataset):
 
         print('Loaded {} with {} labelled samples'.format(split, self.n_samples))
 
+        self.shuffle_ids = np.arange(0, self.n_samples)
+
     def compute_mean_std(self):
         pts_3d = np.copy(self.annot['joint_3d_rel'])
         pts_3d = pts_3d.reshape(pts_3d.shape[0], self.n_joints * 3)
@@ -127,7 +129,9 @@ class H36M(data.Dataset):
 
     def __getitem__(self, index):
 
-        id, img, pose, pose_un, subj = self.get_inputs(index)
+        shuff_id = self.shuffle_ids[index]
+
+        id, img, pose, pose_un, subj = self.get_inputs(shuff_id)
 
         meta = dict()
         meta['annot_id'] = id
@@ -137,3 +141,7 @@ class H36M(data.Dataset):
 
     def __len__(self):
         return self.n_samples
+
+    def init_epoch(self, split):
+        print('Shuffling {} data'.format(split))
+        np.random.shuffle(self.shuffle_ids)
