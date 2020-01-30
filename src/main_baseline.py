@@ -111,9 +111,9 @@ def main():
                                    split='test')
 
             logger.write('LTr {:8f}  MpTr {:8f} NMpTr {:8f} LVal {:8f}  MpVal '
-                    '{:8f} NMpVal {:8f}\n'.format(result_train['loss_mse'],
+                    '{:8f} NMpVal {:8f}\n'.format(result_train['loss_l1'],
                     result_train['mpjpe'], result_train['nmpjpe'],
-                    result_val['loss_mse'], result_val['mpjpe'],
+                    result_val['loss_l1'], result_val['mpjpe'],
                     result_val['nmpjpe']))    # have to change here
 
             print('Saving last epoch model')
@@ -150,7 +150,7 @@ def main():
                 opt_metric_val = metric_val
         else:
             logger.write('LTr {:8f}  MpTfr {:8f} NMpTr {:8f}\n'.format(
-                result_train['loss_mse'],  result_train['mpjpe'], result_train['nmpjpe']))
+                result_train['loss_l1'],  result_train['mpjpe'], result_train['nmpjpe']))
 
         opt.global_step = opt.global_step + 1
         if opt.global_step % opt.lr_step == 0:

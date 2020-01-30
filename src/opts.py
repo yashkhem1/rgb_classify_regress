@@ -10,7 +10,7 @@ class opts():
     self.parser.add_argument('--exp_id', default='default', help='Experiment ID')
     self.parser.add_argument('--test', action='store_true', help='test')
     self.parser.add_argument('--data_dir', default='../data/annot_h36m_cam_reg/', help='data directory')
-    self.parser.add_argument('--img_dir', default='/home/rahul/data/Human3.6/images', help='image directory')
+    self.parser.add_argument('--img_dir', default='../data/Human3.6/images', help='image directory')
     #check if image directory present
 
     self.parser.add_argument('--load_model', default='none', help='Provide full path to a previously trained model')

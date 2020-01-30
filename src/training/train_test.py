@@ -37,7 +37,7 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         if isinstance(m, torch.nn.BatchNorm3d):
             m.momentum = bn_momentum
 
-    loss_mse_avg,  mpjpe_avg, nmpjpe_avg = AverageMeter(), AverageMeter(), AverageMeter()
+    loss_l1_avg,  mpjpe_avg, nmpjpe_avg = AverageMeter(), AverageMeter(), AverageMeter()
 
     max_itrs = 2500
     if split == 'test':
@@ -99,13 +99,13 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         acc = 0
         desp_reg = model['pose'](resnet_feat_reg)
 
-        # loss_mse = 0.
+        # loss_l1 = 0.
         # mpjpe = 0.
         # nmpjpe = 0.
 
         pred_3d_reg_flat = desp_reg.view(batch_size_reg, -1)
 
-        loss_mse = criterion_pose(pred_3d_reg_flat, tar_3d_flat)
+        loss_l1 = criterion_pose(pred_3d_reg_flat, tar_3d_flat)
 
         pred_3d_reg_un = un_normalise_pose(pred_3d_reg_flat.detach().cpu(), mean, std)
 
@@ -115,9 +115,9 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
 
         nmpjpe = cal_avg_l2_jnt_dist(pred_reg_scaled.numpy(), tar_3d_un.numpy(), avg=True)
 
-        loss_mse_avg.update(loss_mse.item())
+        loss_l1_avg.update(loss_l1.item())
 
-        loss = loss_mse
+        loss = loss_l1
         # acc_avg.update(acc)
         mpjpe_avg.update(mpjpe)
         nmpjpe_avg.update(nmpjpe)
@@ -130,8 +130,8 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
             optimizer.step()
             # classifier_optimizer.zero_grad()
 
-        pbar_suffix = 'Ep {}: [{}]| L MSE {:.2f} ' \
-                      '| MPJPE {:.2f} | NMPJPE {:.2f} )'.format(split, epoch, loss_mse_avg.avg, mpjpe_avg.avg, nmpjpe_avg.avg)
+        pbar_suffix = 'Ep {}: [{}]| L L1 {:.4f} ' \
+                      '| MPJPE {:.2f} | NMPJPE {:.2f} )'.format(split, epoch, loss_l1_avg.avg, mpjpe_avg.avg, nmpjpe_avg.avg)
         pbar.set_description(pbar_suffix)
 
         # if split == 'train':
@@ -141,7 +141,7 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
     pbar.close()
 
     results = dict()
-    results['loss_mse'] = loss_mse_avg.avg
+    results['loss_l1'] = loss_l1_avg.avg
     results['mpjpe'] = mpjpe_avg.avg
     results['nmpjpe'] = nmpjpe_avg.avg
 
