@@ -20,8 +20,8 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
     else:
         if epoch == 1:
             data_loader.dataset.init_epoch(split)
-        model['backbone'].train()
-        model['pose'].train()
+        model['backbone'].eval()
+        model['pose'].eval()
         # model['pose'].eval()
         bn_momentum = 0.0
 
