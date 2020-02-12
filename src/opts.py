@@ -11,7 +11,9 @@ class opts():
     self.parser.add_argument('--test', action='store_true', help='test')
     self.parser.add_argument('--data_dir', default='../data/annot_h36m_cam_reg/', help='data directory')
     self.parser.add_argument('--img_dir', default='../data/Human3.6/images', help='image directory')
-    #check if image directory present
+    self.parser.add_argument('--bin_info_pre', default='annot_bins_sc_norm_True_10_10_10', help='bin info file prefix')
+
+    # check if image directory present
 
     self.parser.add_argument('--load_model', default='none', help='Provide full path to a previously trained model')
     self.parser.add_argument('--resume', action='store_true', help='resume training')
@@ -38,13 +40,14 @@ class opts():
     # self.parser.add_argument('--use_temporal', action='store_true', help='use temporal info')
 
     self.parser.add_argument('--num_output', type=int, default=16, help='num joints')
-    self.parser.add_argument('--desp_dim', type=int, default=48, help='descriptor dimension')
-    self.parser.add_argument('--desp_norm', action='store_true', help='descriptor L2 normalise')
+    # self.parser.add_argument('--desp_dim', type=int, default=48, help='descriptor dimension')
     self.parser.add_argument('--bn_aff', action='store_true', help='turns on bn affine params for resnet')
     self.parser.add_argument('--reg_bias', action='store_true', help='uses bias at regression')
     self.parser.add_argument('--res_norm', action='store_true', help='uses imagenet data norm for inp norm')
     self.parser.add_argument('--inp_norm', action='store_true', help='turns on inp normalization')
     self.parser.add_argument('--data_par', action='store_true', help='uses data parallel')
+
+    self.parser.add_argument('--only_xy', action='store_true', help='uses only x and y dimensions')
 
     # self.parser.add_argument('--no_emb', action='store_true', help='disables embedding loss')
     # self.parser.add_argument('--no_pose', action='store_true', help='disables pose loss')

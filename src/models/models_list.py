@@ -133,9 +133,9 @@ class PoseRegressor(nn.Module):
     def __init__(self, opt, in_feat=512, h=1):
         super(PoseRegressor, self).__init__()
 
-        conv_kernels = [h]
+        conv_kernels = [h, 1]
 
-        self.out_feats = [512]
+        self.out_feats = [512, 512]
 
         spatial_dim = h
 
@@ -166,3 +166,71 @@ class PoseRegressor(nn.Module):
         y = self.network(x)
 
         return y
+
+
+class PoseClassifier(nn.Module):
+    def __init__(self, opt, in_feat=512, h=1):
+        super(PoseClassifier, self).__init__()
+
+        self.n_joints = opt.n_joints
+        self.n_bins_x = opt.n_bins_x
+        self.n_bins_y = opt.n_bins_y
+        self.n_bins_z = opt.n_bins_z
+
+        conv_kernels = [h]
+
+        self.out_feats = [512]
+
+        spatial_dim = h
+
+        module_list = []
+
+        for i in range(len(conv_kernels)):
+            module_list.append(nn.Conv2d(in_channels=in_feat, out_channels=self.out_feats[i],
+                                         kernel_size=(conv_kernels[i], conv_kernels[i]),
+                                         padding=(0, 0), bias=False))
+            module_list.append(nn.BatchNorm2d(self.out_feats[i], affine=False))
+
+            module_list.append(nn.ReLU(inplace=True))
+
+            spatial_dim = spatial_dim - (conv_kernels[i]-1)
+
+        self.common_network = nn.Sequential(*module_list)
+
+        # For x
+        self.classifier_x = nn.Sequential(nn.Conv2d(in_channels=self.out_feats[-1],
+                                                    out_channels=self.n_joints * self.n_bins_x,
+                                                    kernel_size=(1, 1), padding=(0, 0), bias=False)
+                                          )
+
+        # For y
+        self.classifier_y = nn.Sequential(nn.Conv2d(in_channels=self.out_feats[-1],
+                                                    out_channels=self.n_joints * self.n_bins_y,
+                                                    kernel_size=(1, 1), padding=(0, 0), bias=False)
+                                          )
+
+        # For z
+        self.classifier_z = nn.Sequential(nn.Conv2d(in_channels=self.out_feats[-1],
+                                                    out_channels=self.n_joints * self.n_bins_z,
+                                                    kernel_size=(1, 1), padding=(0, 0), bias=False)
+                                          )
+
+    def forward(self, x):
+
+        batch_size = x.shape[0]
+        in_feat = x.shape[1]
+        h = x.shape[2]
+        w = x.shape[3]
+
+        feat_common = self.common_network(x)
+
+        x_out = self.classifier_x(feat_common)
+        # x_out = x_out.view(batch_size, self.n_joints, self.n_bins_x)
+
+        y_out = self.classifier_y(feat_common)
+        # y_out = y_out.view(batch_size, self.n_joints, self.n_bins_y)
+
+        z_out = self.classifier_z(feat_common)
+        # z_out = z_out.view(batch_size, self.n_joints, self.n_bins_z)
+
+        return x_out, y_out, z_out

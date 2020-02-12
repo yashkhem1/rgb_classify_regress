@@ -127,3 +127,14 @@ def cal_p_mpjpe(predicted, target, avg=True):
         return np.mean(pmpjpe_batch)
     else:
         return pmpjpe_batch
+
+
+def calculate_class_accuracy(pred, target):
+    # pred are probabilities
+    # target is class id
+
+    pred_max_id = torch.argmax(pred, dim=1)
+
+    acc = torch.mean((pred_max_id == target).float())
+
+    return acc
