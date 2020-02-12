@@ -200,19 +200,19 @@ class PoseClassifier(nn.Module):
         # For x
         self.classifier_x = nn.Sequential(nn.Conv2d(in_channels=self.out_feats[-1],
                                                     out_channels=self.n_joints * self.n_bins_x,
-                                                    kernel_size=(1, 1), padding=(0, 0), bias=False)
+                                                    kernel_size=(1, 1), padding=(0, 0), bias=True)
                                           )
 
         # For y
         self.classifier_y = nn.Sequential(nn.Conv2d(in_channels=self.out_feats[-1],
                                                     out_channels=self.n_joints * self.n_bins_y,
-                                                    kernel_size=(1, 1), padding=(0, 0), bias=False)
+                                                    kernel_size=(1, 1), padding=(0, 0), bias=True)
                                           )
 
         # For z
         self.classifier_z = nn.Sequential(nn.Conv2d(in_channels=self.out_feats[-1],
                                                     out_channels=self.n_joints * self.n_bins_z,
-                                                    kernel_size=(1, 1), padding=(0, 0), bias=False)
+                                                    kernel_size=(1, 1), padding=(0, 0), bias=True)
                                           )
 
     def forward(self, x):

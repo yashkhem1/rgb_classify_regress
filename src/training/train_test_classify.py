@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import math
 from common.utils import AverageMeter
-from common.error_metrics import calculate_class_accuracy
+from common.error_metrics import calculate_correct_mask
 from common.error_metrics import un_normalise_pose, cal_avg_l2_jnt_dist, scale_norm_pose, normalise_pose
 
 
@@ -118,21 +118,19 @@ def run_epoch(epoch, opt, data_loader, model, optimizer=None, split='train'):
         tar_y_cpu = tar_y.detach().cpu()
         tar_z_cpu = tar_z.detach().cpu()
 
-        acc_x_batch = calculate_class_accuracy(x_out_cpu, tar_x_cpu)
-        acc_y_batch = calculate_class_accuracy(y_out_cpu, tar_y_cpu)
+        correct_x_batch = calculate_correct_mask(x_out_cpu, tar_x_cpu)
+        correct_y_batch = calculate_correct_mask(y_out_cpu, tar_y_cpu)
 
-        acc_x.update(acc_x_batch.item())
-        acc_y.update(acc_y_batch.item())
+        acc_x.update(correct_x_batch.float().mean().item())
+        acc_y.update(correct_y_batch.float().mean().item())
 
         if opt.only_xy is True:
-            acc_batch = calculate_class_accuracy(torch.cat((x_out_cpu, y_out_cpu), dim=0),
-                                           torch.cat((tar_x_cpu, tar_y_cpu), dim=0))
+            acc_batch = torch.mul(correct_x_batch, correct_y_batch).float().mean()
         else:
-            acc_z_batch = calculate_class_accuracy(z_out_cpu, tar_z_cpu)
-            acc_z.update(acc_z_batch.item())
+            correct_z_batch = correct_x_batch = calculate_correct_mask(z_out_cpu, tar_z_cpu)
+            acc_z.update(correct_z_batch.float().mean().item())
 
-            acc_batch = calculate_class_accuracy(torch.cat((x_out_cpu, y_out_cpu, z_out_cpu), dim=0),
-                                           torch.cat((tar_x_cpu, tar_y_cpu, tar_z_cpu), dim=0))
+            acc_batch = torch.mul((torch.mul(correct_x_batch, correct_y_batch), correct_z_batch)).float().mean()
 
         acc.update(acc_batch.item())
 

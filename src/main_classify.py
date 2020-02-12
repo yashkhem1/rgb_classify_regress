@@ -59,7 +59,7 @@ def main():
     opt.n_joints = train_dataset.n_joints
 
     model = dict()
-    model['backbone'] = BackBone(opt, spatial_size=2)
+    model['backbone'] = BackBone(opt, spatial_size=7)
     model['classifier'] = PoseClassifier(opt, in_feat=model['backbone'].out_feats, h=model['backbone'].out_feat_h)
 
     opt.bn_momentum = 0.1
